@@ -1,5 +1,9 @@
 # -*- coding: utf-8 -*-
 
+"""
+Look up Relevant Symbols for S&P500
+"""
+
 import datetime
 import lxml.html as lh
 import urllib.request
