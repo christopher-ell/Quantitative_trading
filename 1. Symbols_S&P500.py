@@ -1,9 +1,4 @@
 # -*- coding: utf-8 -*-
-"""
-Created on Mon May 29 17:31:10 2017
-
-@author: 84881
-"""
 
 import datetime
 import lxml.html as lh
