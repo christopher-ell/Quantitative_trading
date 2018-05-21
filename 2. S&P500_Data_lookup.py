@@ -84,7 +84,7 @@ def insert_daily_data_into_db(data_vendor_id, symbol_id, daily_data):
     column_str = """data_vendor_id, symbol_id, price_date, create_date,
                     last_updated_date, open_price, high_price, low_price,
                     close_price, adj_close_price, volume, checks"""
-    insert_str = ("%s, " * 11)[:-2]                
+    insert_str = ("%s, " * 12)[:-2]                
     final_str = "INSERT INTO daily_price (%s) VALUES (%s)" % (column_str, insert_str)
     
     with con:
@@ -109,7 +109,7 @@ def example_sample_sp500():
     for t in tickers:
         print("#########################################")
         print("Adding data for %s" % t[2])
-        yf_data = get_daily_historic_data_yahoo(t[2], (2014,5,1), (2017,5,1))
+        yf_data = get_daily_historic_data_yahoo(t[2], (2008,5,1), (2018,5,1))
         if not yf_data:
             print("#########################################")
             print("%s unable to be downloaded" % t[2])
