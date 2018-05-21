@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 """
 Basic Cointegration Mean Reversions
-
 Fix
 - Check if the log difference is better to use than the absolute value of the series
 """
@@ -31,14 +30,17 @@ con = connect_sec_db()
 
 price_data = pd.read_sql("select * from daily_price;", con=con)
 
+price_data = price_data[price_data.checks == 1]
+
 
 unique_symbols = price_data.symbol_id.unique()
 
-presults = []
+presults = pd.DataFrame(columns = ['symbol_id','test type', 'p-value'])
+row = 1
 
 ## Test all datasets for a unit root
-for t in unique_symbols:
-
+for t in unique_symbols:    
+    
     data = price_data[price_data.symbol_id == t]
     data['lreturn'] = np.log(price_data.adj_close_price) - np.log(price_data.adj_close_price).shift(1)
     data = data.iloc[1:]
@@ -53,13 +55,28 @@ for t in unique_symbols:
     ## p-value gives probability of not rejecting null.
     for ttype in ['nc', 'c', 'ct']:
         adfuller_res = ts.adfuller_res = ts.adfuller(data['lreturn'],
-                                                     regression = ttype, 
-                                                     autolag = 'AIC')
+                                                     regression = ttype)
     
-        if adfuller_res[1] < 0.05:    
-            temp = [t, ttype, adfuller_res[1]]    
-            presults.append(temp)
+        if adfuller_res[1] > 0.05:      
+            presults.loc[row] = [t, ttype, adfuller_res[1]]
+            row += 1
     
+dpresults = pd.DataFrame(columns = ['symbol_id','test type', 'p-value'])
+unique_symbols = presults.symbol_id.unique()
 
+#for t in unique_symbols:
+#    data = price_data[price_data.symbol_id == t]
+#    data['dlreturn'] = price_data.adj_close_price - price_data.adj_close_price.shift(1)
+#    data = data.iloc[1:]
+#    for ttype in ['nc', 'c', 'ct']:
+#        adfuller_res = ts.adfuller_res = ts.adfuller(data['dlreturn'],
+#                                                     regression = ttype)
+#        
+#        if adfuller_res[1] > 0.05:      
+#            dpresults.loc[row] = [t, ttype, adfuller_res[1]]
+#            row += 1
+    
+    
+    
 
 
