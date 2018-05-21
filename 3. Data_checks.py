@@ -1,9 +1,7 @@
 # -*- coding: utf-8 -*-
 """
 Created on Sat May 19 13:43:55 2018
-
 @author: cell
-
 Problems:
     - Current program excludes all incomplete sets of data
     - A more automated way to get the maximum number of records than 756
@@ -26,14 +24,18 @@ def connect_sec_db():
     
     return con
 
-
 con = connect_sec_db()
 
-
-
 price_data = pd.read_sql("select * from daily_price;", con=con)
-    
-## For finding data without all dates
+
+
+
+
+ 
+##########################################   
+## 1. For finding data without all dates##
+##########################################
+
 #size_count = price_data.groupby('symbol_id').size()
 
 ## Get rid of all rows below 756 records (number of total stock dates in time 
@@ -42,11 +44,27 @@ date_filter = price_data.groupby('symbol_id').filter(lambda x: len(x) >= 756)
 
 check_ids = date_filter.symbol_id.unique()
 
-
-for t in range(0, len(check_ids) - 1):
+for t in range(0, len(check_ids)):
     q_str = 'update daily_price set checks = 1 where symbol_id = {}'.format(check_ids[t])
     cur = con.cursor()
     cur.execute(q_str)
+    
+
+
+#############################################   
+## 2. For finding data with negative values##
+#############################################
+
+data_filter = price_data[price_data['adj_close_price'] < 0]
+
+neg_ids = data_filter.symbol_id.unique()
+
+for t in range(0, len(neg_ids)):
+    q_str = 'update daily_price set checks = -1 where symbol_id = {}'.format(neg_ids[t])
+    print(q_str)
+    cur = con.cursor()
+    cur.execute(q_str)
+
 
 ## Work on incorporating incomplete data
 #    
@@ -61,6 +79,5 @@ for t in range(0, len(check_ids) - 1):
 #stock_df = pd.DataFrame(index=unique_dates)
 #
 #stock_df = stock_df.join(stock_temp, how='left')
-
 
 
