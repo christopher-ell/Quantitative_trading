@@ -33,7 +33,7 @@ price_data = pd.read_sql("select * from daily_price;", con=con)
 price_data = price_data[price_data.checks == 1]
 
 
-unique_symbols = price_data.symbol_id.unique()
+unique_symbols = price_data.symbol_id.unique().tolist()
 
 presults = pd.DataFrame(columns = ['symbol_id','test type', 'p-value'])
 row = 1
@@ -66,7 +66,7 @@ for t in unique_symbols:
             row += 1
     
 dpresults = pd.DataFrame(columns = ['symbol_id','test type', 'p-value'])
-unique_symbols = presults.symbol_id.unique()
+unique_symbols = presults.symbol_id.unique().tolist()
 
 for t in unique_symbols:
     data = price_data[price_data.symbol_id == t]
@@ -84,7 +84,5 @@ for t in unique_symbols:
             row += 1
     
 
-unit_roots = dpresults.symbol_id.unique()
+unit_roots = dpresults.symbol_id.unique().tolist()
     
-
-
