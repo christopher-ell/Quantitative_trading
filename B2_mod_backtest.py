@@ -6,6 +6,8 @@ lookback period.
 problems
 - Not sure if I should append the validation data to the training data when 
   estimating test parameters
+- Always chooses 'nc' trend for some reason?
+- Overall relationships make negative returns
 """
 
 
@@ -156,10 +158,10 @@ def Backtester_ml(symbol_id1, symbol_id2, look, trend, band, stage):
     backtester.loc[backtester['z-score'] <= -band, 'long/short'] = -1 ## Want to buy 1 short 1/beta of 2
 
     ## Calculate holdings of stock 1by multiplying by -1
-    backtester['holding_'+str(symbol_id1)] = backtester['long/short'] * -1
+    backtester['holding_'+str(symbol_id1)] = backtester['long/short']
 
     ## Calculate holdings of stock 2 by multiplying by the hedge ratio
-    backtester['holding_'+str(symbol_id2)] = backtester['long/short'] * hedgev
+    backtester['holding_'+str(symbol_id2)] = backtester['long/short'] * -hedgev
 
     ## Calculate returns by multiplying percentage change in each stock by holdings           
     backtester['return'] = backtester['holding_'+str(symbol_id1)].shift(1) * backtester['return_'+str(symbol_id1)] + backtester['holding_'+str(symbol_id2)].shift(1) * backtester['return_'+str(symbol_id2)]
@@ -168,42 +170,42 @@ def Backtester_ml(symbol_id1, symbol_id2, look, trend, band, stage):
     ## days in data
     ret = backtester['return'].sum()*(240/len(backtester))
     
-    return ret
+    return ret, backtester
 
 
 
 symbol_id1 = 4
 symbol_id2 = 13
 
-
-#all_coint_res["combs"] = all_coint_res["symbol_id1"]+all_coint_res["symbol_id2"]
-#unique1_coint_res = all_coint_res.combs.unique().tolist()
+parameters = pd.DataFrame(columns = ['symbol_id1','symbol_id2', 'trend', 'look', 'annual_test_return'])
 
 
-for i in range(0, len(all_coint_res)):
+coint_rels=all_coint_res.groupby(["symbol_id1", "symbol_id2"]).count().reset_index()
+
+
+#for i in range(0, len(coint_rels)):
+for i in range(0, 50):
     
-    symbol_id1 = all_coint_res.iloc[i]['symbol_id1']
-    symbol_id2 = all_coint_res.iloc[i]['symbol_id2']
+    symbol_id1 = coint_rels.iloc[i]['symbol_id1']
+    symbol_id2 = coint_rels.iloc[i]['symbol_id2']
 
     datasize = 753
     look = 5
     #trend = 'nc'
-    band = 2
+    band = 1.5
     #stage = 'val'
     select_trend = 'nc'
     best_return = -99
 
-    parameters = pd.DataFrame(columns = ['symbol_id1','symbol_id2', 'trend', 'look', 'annual_test_return'])
-
     ## Decide on best trend to use
 
     ## Test no constant or trend
-    ret_v_nc = Backtester_ml(symbol_id1, symbol_id2, look, 'nc', band, 'test')
+    ret_v_nc, _ = Backtester_ml(symbol_id1, symbol_id2, look, 'nc', band, 'test')
 
     best_return = ret_v_nc
 
     ## Test only constant
-    ret_v_c = Backtester_ml(symbol_id1, symbol_id2, look, 'c', band, 'val')
+    ret_v_c, _ = Backtester_ml(symbol_id1, symbol_id2, look, 'c', band, 'val')
 
     # If only constant return is better than best return so far replace
     if ret_v_c > best_return:
@@ -211,7 +213,7 @@ for i in range(0, len(all_coint_res)):
         best_return = ret_v_c
 
     ## Test only trend
-    ret_v_t = Backtester_ml(symbol_id1, symbol_id2, look, 't', band, 'val')
+    ret_v_t, _ = Backtester_ml(symbol_id1, symbol_id2, look, 't', band, 'val')
 
     # If only trend return is better than best return so far replace
     if ret_v_t > best_return:
@@ -226,11 +228,15 @@ for i in range(0, len(all_coint_res)):
 
     ## Test and validation period are 20% and 10% is half that
     for lookback in range(5,int(0.1*datasize)):
-        ret_lb = Backtester_ml(symbol_id1, symbol_id2, lookback, select_trend, band, 'val')
+        ret_lb, _ = Backtester_ml(symbol_id1, symbol_id2, lookback, select_trend, band, 'val')
         if ret_lb > best_return:
             best_return = ret_lb
             look = lookback
         
-    ret_t = Backtester_ml(symbol_id1, symbol_id2, look, select_trend, band, 'test')
-
+    ret_t, back = Backtester_ml(symbol_id1, symbol_id2, look, select_trend, band, 'test')
+    
     parameters.loc[i+1]=[symbol_id1, symbol_id2, select_trend, look, ret_t]
+    
+    print("This value: ", i)
+
+    
