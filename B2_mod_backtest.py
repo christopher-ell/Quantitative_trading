@@ -19,14 +19,17 @@ import statsmodels.tsa.stattools as ts
 import statsmodels.api as sm
 #from pandas.stats.api import ols
 
-
+## Connect to MySQL database
 def connect_sec_db():
     # Database connection to MySQL instance
     db_host = "localhost"
     db_user = "root"
     db_pass = "password"
     db_name = "securities_master"
+    ## Connection string
     con = mdb.connect(host=db_host, user=db_user, passwd=db_pass, db=db_name, 
+                      ## Set autocommit equal to True so you can make changes 
+                      ## to the database
                       autocommit=True)
     
     return con
@@ -35,7 +38,7 @@ def hedge_ratio(x, y, trend='NC'):
     if trend.upper() == 'C':
         ## Create field of just 1 for constant
         x = sm.add_constant(x)
-        #print("Here1")
+        ## Estimate model using OLS for trend
         model = sm.OLS(y, x).fit()
         ## Extract both parameters into dictionary
         params = [model.params[0], model.params[1]]
@@ -44,27 +47,30 @@ def hedge_ratio(x, y, trend='NC'):
         x=x.to_frame()
         ## Create numbers from 1 to length of data for time trend
         x.insert(0, 'trend', range(1,1+len(x)))
-        #print("Here2")
+        ## Estimate model using OLS for trend
         model = sm.OLS(y, x).fit()
         ## Extract both parameters into dictionary
         params = [model.params[0], model.params[1]]
         return params
     model = sm.OLS(y, x).fit()
-    #print("Here3")
     return model.params.values
 
 
-
+## Split data into training, validation and test sets
 def ml_data_split(data):
     
     import pandas as pd
-
+    
+    ## Slice training data from the start to 60% of the whole number of points
     train_data = data[0:int(len(data)*0.6)]
 
+    ## SLice validation data from end of first 60% of data to 80%
     val_data = data[int(len(data)*0.6):int(len(data)*0.8)]
-
+    
+    ## SLice test data from last 80% of data to end
     test_data = data[int(len(data)*0.8):]
     
+    ## Return data split into 3 parts
     return train_data, val_data, test_data
 
 
@@ -78,24 +84,28 @@ def Backtester_ml(symbol_id1, symbol_id2, look, trend, band, stage):
 
     ## Import data from symbol 1 and rename the price column uniquely for later merging
     query = "select symbol_id, price_date, adj_close_price from daily_price where symbol_id = {};".format(symbol_id1)
+    ## Run query on mysql server
     data1 = pd.read_sql(query, con=con)
+    ## Give column a unique name so it can be merged with other data
     data1 = data1.rename(columns={"adj_close_price":"adj_close_price"+str(symbol_id1)})
+    ## Split into training, validation and test sets
     data1_train, data1_val, data1_test = ml_data_split(data1)
 
     ## Import data from symbol 2 and rename the price column uniquely for later merging
     query = "select symbol_id, price_date, adj_close_price from daily_price where symbol_id = {};".format(symbol_id2)
+    ## Run query on mysql server
     data2 = pd.read_sql(query, con=con)
+    ## Give column a unique name so it can be merged with other data
     data2 = data2.rename(columns={"adj_close_price":"adj_close_price"+str(symbol_id2)})
+    ## Split into training, validation and test sets
     data2_train, data2_val, data2_test = ml_data_split(data2)
 
     ## Merge data for symbols 1 and 2 into backtester data
     ## If the model is in the validation stage use the validation dataset 
     ## If the model is in the test stage use the test dataset 
     if stage.upper() == 'VAL':
-#        print("here1")
         backtester = pd.merge(data1_val[['adj_close_price'+str(symbol_id1), 'price_date']], data2_val[['adj_close_price'+str(symbol_id2), 'price_date']], how='inner', on='price_date')
     elif stage.upper() == 'TEST':
-#        print("here2")
         backtester = pd.merge(data1_test[['adj_close_price'+str(symbol_id1), 'price_date']], data2_test[['adj_close_price'+str(symbol_id2), 'price_date']], how='inner', on='price_date')
     else:
         print("Invalid stage, please use 'VAL' or 'TEST'")
@@ -120,9 +130,7 @@ def Backtester_ml(symbol_id1, symbol_id2, look, trend, band, stage):
         if stage.upper() == "VAL":
             hedge = hedge_ratio(data1_train['adj_close_price'+str(symbol_id1)], data2_train['adj_close_price'+str(symbol_id2)], 'T')
         else:
-#            print("herehere")
-#            print(data2_val.columns.values)
-            ## When estimating the test parameters use all the data by appending validation set to train
+            ## When estimating the test parameters use all the data by appending validation set to train set
             hedge = hedge_ratio(data1_train['adj_close_price'+str(symbol_id1)].append(data1_val['adj_close_price'+str(symbol_id1)]), data2_train['adj_close_price'+str(symbol_id2)].append(data2_val['adj_close_price'+str(symbol_id2)]), 'T')
         backtester.insert(0, 'trend', range(1,1+len(backtester)))
         ## Calculate difference between predicted value and actual value
@@ -184,7 +192,7 @@ coint_rels=all_coint_res.groupby(["symbol_id1", "symbol_id2"]).count().reset_ind
 
 
 #for i in range(0, len(coint_rels)):
-for i in range(0, 50):
+for i in range(0, 5):
     
     symbol_id1 = coint_rels.iloc[i]['symbol_id1']
     symbol_id2 = coint_rels.iloc[i]['symbol_id2']
@@ -239,4 +247,4 @@ for i in range(0, 50):
     
     print("This value: ", i)
 
-    
+
