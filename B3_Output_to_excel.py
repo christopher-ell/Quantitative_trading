@@ -11,76 +11,104 @@ import matplotlib.dates as mdates
 import openpyxl
 
 filepath = 'V:\Staff\Chris\Programming\Python\Quant\Quantstart\Outputs\Template.xlsx'
-
-writer = pd.ExcelWriter(filepath, engine='xlsxwriter')
-
-back.to_excel(writer, sheet_name='test')
-
-writer.save()
+sheet_name = "test"
 
 
 
 
-## PLOTS
-## ts1 is company 1 and ts2 is company 2
-## 
-def plot_results(df, ts1, ts2, filepath, cell):
-    months = mdates.MonthLocator()  # every month
-    fig, ax = plt.subplots()
-    ax.plot(df['price_date'], df[ts1], label=ts1)
-    ax.plot(df['price_date'], df[ts2], label=ts2)
-    ax.xaxis.set_major_locator(months)
-    ax.xaxis.set_major_formatter(mdates.DateFormatter('%b %Y'))
-#    ax.set_xlim(datetime.datetime(start_year, start_month_num, start_day_num), datetime.datetime(end_year, end_month_num, end_day_num))
-    ax.grid(True)
-    fig.autofmt_xdate()
 
-    plt.xlabel('Month/Year')
-    plt.ylabel('Cumulative Percent Growth')
-    plt.title('%s and %s Cumulative Percent Growth' % (ts1, ts2))
-    plt.legend()
-    plt.savefig('plot.png', dpi=150)
+
+
+
+## Chart 1
+
+def plot_results(df, ts1, ts2, sheet_name, filepath, cell):
     
-    plt.show()
+    ## Create Pandas Excel writer using Xlswriter as the engine
+    writer = pd.ExcelWriter(filepath, engine='xlsxwriter')
+    back.to_excel(writer, sheet_name=sheet_name, startrow=1, startcol=1)
     
-    wb = openpyxl.load_workbook(filepath)
-    ws = wb.active    
-    img = openpyxl.drawing.image.Image('plot.png')
-    img.anchor(ws.cell(cell))
-    ws.add_image(img)
-    wb.save(filepath)
-
+    ## Access the Xlswriter workbook and worksheets objects from the dataframe.
+    workbook = writer.book
+    worksheet = writer.sheets[sheet_name]
     
+    ## Create a chart object 
+    chart = workbook.add_chart({'type':'line'})
+
+    ## Calculate extremes for axes
+    min_x1 = back[ts1].min()
+    max_x1 = back[ts1].max()
+    min_x2 = back[ts2].min()
+    max_x2 = back[ts2].max()    
+    min_x = min(min_x1, min_x2)
+    max_x = max(max_x1, max_x2)
 
 
+    ## Configure the series of the chart from the dataframe data
+    chart.add_series({
+            'name':ts1,
+            'categories': '=test!$D$3:$D502',
+            'values':'=test!$C$3:$C502'
+            })
 
-def plot_scatter_ts(df, ts1, ts2, filepath, cell):
-    plt.xlabel('%s Price ($)' % ts1)
-    plt.ylabel('%s Price ($)' % ts2)
-    plt.title('%s and %s Price Scatterplot' % (ts1, ts2))
-    plt.scatter(df[ts1], df[ts2])
+    chart.add_series({
+            'name':ts2,
+            'categories': '=test!$D$3:$D502',
+            'values':'=test!$E$3:$E502'
+            })
+
+    ## Configure chart axis
+    chart.set_x_axis({'name':'Month/Year',
+                      'date_axis':True,
+                      'num_format': 'mm/yy', 
+                      'major_gridlines':{
+                              'visible':True,
+                              'line':{'width':1, 'dash_type':'dash'}
+                              }})
+    chart.set_y_axis({'name':'Cumulative Percent Growth',
+                      'min':min_x,
+                      'max':max_x,
+                      'major_gridlines':{
+                              'visible':True,
+                              'line':{'width':1, 'dash_type':'dash'}
+                              }                  
+                      })
+    chart.set_title({'name':'%s and %s Cumulative Percent Growth' % (ts1, ts2)})
     
-#    plt.show()
-    
-    wb = openpyxl.load_workbook(filepath)
-    ws = wb.active
-    plt.savefig('plot.png', dpi=150)    
-    img = openpyxl.drawing.image.Image('plot.png')
-    img.anchor(ws.cell(cell))
-    ws.add_image(img)
-    wb.save(filepath)
+    chart.set_legend({'position':'bottom'})
+    chart.set_chartarea({'border':{'none':True}})
 
-    
+    ## Insert chart into worksheet
+    worksheet.insert_chart(cell, chart)
 
-plot_results(back, 'adj_close_price4.0', 'adj_close_price26.0', filepath, 'P2')
+    writer.save()
 
-plot_scatter_ts(back, 'adj_close_price4.0', 'adj_close_price26.0', filepath, 'P34')
-    
+plot_results(back, 'adj_close_price4.0', 'adj_close_price26.0', sheet_name, filepath, 'Q2')
 
 
-
-
-    
-
-
-
+### Chart 2
+#
+### Create a chart object 
+#chart = workbook.add_chart({'type':'scatter'})
+#
+### Configure the series of the chart from the dataframe data
+#chart.add_series({
+##        'name':'Series1',
+#        'categories': 'test!$E$3:$E502',
+#        'values':'=test!$C$3:$C502'
+#        })
+#
+##chart.add_series({
+##        'name':'Series2',
+##        'categories': '=test!$D$3:$D502',
+##        'values':'=test!$E$3:$E502'
+##        })
+#
+### Configure chart axis
+#chart.set_x_axis({'name':'Series1'})
+#chart.set_y_axis({'name':'Series2'})
+#
+### Insert chart into worksheet
+#worksheet.insert_chart('Q18', chart)
+#
+#writer.save()
