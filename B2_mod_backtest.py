@@ -172,11 +172,13 @@ def Backtester_ml(symbol_id1, symbol_id2, look, trend, band, stage):
     backtester['holding_'+str(symbol_id2)] = backtester['long/short'] * -hedgev
 
     ## Calculate returns by multiplying percentage change in each stock by holdings           
-    backtester['return'] = backtester['holding_'+str(symbol_id1)].shift(1) * backtester['return_'+str(symbol_id1)] + backtester['holding_'+str(symbol_id2)].shift(1) * backtester['return_'+str(symbol_id2)]
+    backtester['returns'] = backtester['holding_'+str(symbol_id1)].shift(1) * backtester['return_'+str(symbol_id1)] + backtester['holding_'+str(symbol_id2)].shift(1) * backtester['return_'+str(symbol_id2)]
 
     ## Sum total returns from each period and annualise by working days 240/total 
     ## days in data
-    ret = backtester['return'].sum()*(240/len(backtester))
+    ret = backtester['returns'].sum()*(240/len(backtester))
+    
+    df['cum_return'] = df.returns.cumsum()
     
     return ret, backtester
 
