@@ -21,6 +21,7 @@ import statsmodels.api as sm
 
 ## Connect to MySQL database
 def connect_sec_db():
+    import MySQLdb as mdb
     # Database connection to MySQL instance
     db_host = "localhost"
     db_user = "root"
@@ -55,6 +56,12 @@ def hedge_ratio(x, y, trend='NC'):
     model = sm.OLS(y, x).fit()
     return model.params.values
 
+def symb_id_lookup(symbol_id):
+    con = connect_sec_db()
+    query = "select ticker from symbol where id = {};".format(symbol_id)
+    ticker = pd.read_sql(query, con=con)
+    return ticker
+
 
 ## Split data into training, validation and test sets
 def ml_data_split(data):
@@ -75,12 +82,14 @@ def ml_data_split(data):
 
 
 
-con = connect_sec_db()
+
 
 
 
 
 def Backtester_ml(symbol_id1, symbol_id2, look, trend, band, stage):
+    
+    con = connect_sec_db()
 
     ## Import data from symbol 1 and rename the price column uniquely for later merging
     query = "select symbol_id, price_date, adj_close_price from daily_price where symbol_id = {};".format(symbol_id1)
@@ -178,7 +187,7 @@ def Backtester_ml(symbol_id1, symbol_id2, look, trend, band, stage):
     ## days in data
     ret = backtester['returns'].sum()*(240/len(backtester))
     
-    df['cum_return'] = df.returns.cumsum()
+    backtester['cum_return'] = backtester.returns.cumsum()
     
     return ret, backtester
 
@@ -194,7 +203,7 @@ coint_rels=all_coint_res.groupby(["symbol_id1", "symbol_id2"]).count().reset_ind
 
 
 #for i in range(0, len(coint_rels)):
-for i in range(0, 5):
+for i in range(0, 2):
     
     symbol_id1 = coint_rels.iloc[i]['symbol_id1']
     symbol_id2 = coint_rels.iloc[i]['symbol_id2']
