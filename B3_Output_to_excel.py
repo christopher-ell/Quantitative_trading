@@ -8,7 +8,6 @@ Publish output for each working strategy into an Excel file
 import pandas as pd
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
-import openpyxl
 
 #filepath = 'V:\Staff\Chris\Programming\Python\Quant\Quantstart\Outputs\test.xlsx'
 
@@ -28,12 +27,14 @@ def connect_sec_db():
     
     return con
 
-## Look up ticker of symbol_id
 def symb_id_lookup(symbol_id):
+    import pandas as pd
     con = connect_sec_db()
     query = "select ticker from symbol where id = {};".format(symbol_id)
     ticker = pd.read_sql(query, con=con)
     return ticker['ticker'][0]
+
+
 
 def plot_results(writer, df, symbol_id1, symbol_id2, sheet_name, filepath, cell):    
     
@@ -238,21 +239,39 @@ def plot_returns(writer, df, symbol_id1, symbol_id2, sheet_name, filepath, cell)
 
 def excel_export(back, symbol_id1, symbol_id2, filepath): 
     
+    import pandas as pd
+    import matplotlib.pyplot as plt
+    import matplotlib.dates as mdates
+    
+    ticker1 = symb_id_lookup(symbol_id1)
+    ticker2 = symb_id_lookup(symbol_id2)
+    
+#    print("file path is: ", filepath)
+#    print("ticker1 is: ", ticker1)
+#    print("ticker2 is: ", ticker2)
 
-    writer = pd.ExcelWriter(filepath, engine='xlsxwriter')
+    filename = filepath + ticker1 + "_" +ticker2 + ".xlsx"
+#    print("File path is: ", filename)
+
+    writer = pd.ExcelWriter(filename, engine='xlsxwriter')
     sheet_name='coint_analysis'
 
-    plot_results(writer, back, symbol_id1, symbol_id2, sheet_name, filepath, 'Q2')
+    plot_results(writer, back, symbol_id1, symbol_id2, sheet_name, filename, 'Q2')
     
-    plot_scatter_ts(writer, back, symbol_id1, symbol_id2, sheet_name, filepath, 'Q18')
+    plot_scatter_ts(writer, back, symbol_id1, symbol_id2, sheet_name, filename, 'Q18')
 
-    plot_spread(writer, back, symbol_id1, symbol_id2, sheet_name, filepath, 'Z2')
+    plot_spread(writer, back, symbol_id1, symbol_id2, sheet_name, filename, 'Z2')
 
-    plot_returns(writer, back, symbol_id1, symbol_id2, sheet_name, filepath, 'Z18')
+    plot_returns(writer, back, symbol_id1, symbol_id2, sheet_name, filename, 'Z18')
 
+#    print("File path is: ", filename)
 
     writer.save()
     
-filename = 'V:/Staff/Chris/Programming/Python/Quant/Quantstart/Outputs/test.xlsx';
 
-excel_export(back, 4, 13, filename)
+
+
+    
+#filepath = 'V:/Staff/Chris/Programming/Python/Quant/Quantstart/Outputs/';
+#
+#excel_export(back, 4, 11, filepath)
