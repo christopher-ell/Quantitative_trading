@@ -57,10 +57,11 @@ def hedge_ratio(x, y, trend='NC'):
     return model.params.values
 
 def symb_id_lookup(symbol_id):
+    import pandas as pd
     con = connect_sec_db()
     query = "select ticker from symbol where id = {};".format(symbol_id)
     ticker = pd.read_sql(query, con=con)
-    return ticker
+    return ticker['ticker'][0]
 
 
 ## Split data into training, validation and test sets
@@ -193,8 +194,8 @@ def Backtester_ml(symbol_id1, symbol_id2, look, trend, band, stage):
 
 
 
-symbol_id1 = 4
-symbol_id2 = 13
+#symbol_id1 = 4
+#symbol_id2 = 13
 
 parameters = pd.DataFrame(columns = ['symbol_id1','symbol_id2', 'trend', 'look', 'annual_test_return'])
 
@@ -203,7 +204,7 @@ coint_rels=all_coint_res.groupby(["symbol_id1", "symbol_id2"]).count().reset_ind
 
 
 #for i in range(0, len(coint_rels)):
-for i in range(0, 2):
+for i in range(0, 12456):
     
     symbol_id1 = coint_rels.iloc[i]['symbol_id1']
     symbol_id2 = coint_rels.iloc[i]['symbol_id2']
@@ -253,6 +254,12 @@ for i in range(0, 2):
             look = lookback
         
     ret_t, back = Backtester_ml(symbol_id1, symbol_id2, look, select_trend, band, 'test')
+    
+#    print("symbol id: ", symbol_id1)
+    
+    filepath = 'V:/Staff/Chris/Programming/Python/Quant/Quantstart/Outputs/';
+
+    excel_export(back, int(symbol_id1), int(symbol_id2), filepath)
     
     parameters.loc[i+1]=[symbol_id1, symbol_id2, select_trend, look, ret_t]
     
