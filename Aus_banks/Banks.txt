@@ -1,0 +1,5 @@
+ticker	instrument	name	sector	currency
+nab	stock	National Australia Bank Ltd	Bank	AUD
+wbc	stock	Westpac Banking Corp	Bank	AUD
+cba	stock	Commonwealth Bank of Australia	Bank	AUD
+anz	stock	Australia and New Zealand Banking Group	Bank	AUD
