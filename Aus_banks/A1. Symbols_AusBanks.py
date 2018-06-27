@@ -22,7 +22,7 @@ def obtain_banks():
     symbols['created_date'] = now
     symbols['last_update_date'] = now
            
-#    symbols = [tuple(x) for x in symbols.values]
+    symbols = [tuple(x) for x in symbols.values]
     
     return symbols
 
@@ -50,34 +50,9 @@ def insert_snp500_symbols(symbols):
         # This line avoids the MySQL Max_PACKET_SIZE
         # Although of course it could be set larger!
         for i in range(0, int(ceil(len(symbols)/100.0))):
-            cur.executemany(final_str, symbols[i*100:(i+1)*100-1])
+            cur.executemany(final_str, symbols)
             
-#if __name__ == "__main__":
-#    symbols = obtain_banks()
-#    insert_snp500_symbols(symbols)
+if __name__ == "__main__":
+    symbols = obtain_banks()
+    insert_snp500_symbols(symbols)
 
-#print(symbols)
-
-symbols = obtain_banks()
-
-# Connect to the MySQL instance
-db_host = "localhost"
-db_user = "root"
-db_pass = "password"
-db_name = "securities_master"
-    
-con = mdb.connect(host=db_host, user=db_user, passwd=db_pass, db=db_name)
-    
-# Create the insert strings
-column_str = "ticker, instrument, name, sector, currency, created_date, last_update_date"
-insert_str = ("%s, " * 7)[:-2]
-final_str = "insert into symbol (%s) values (%s)" % (column_str, insert_str)
-#print(final_str, len(symbols))
-    
-# Using the MySQL connection, carry out an insert into for every symbol
-with con:
-    cur = con.cursor()
-    # This line avoids the MySQL Max_PACKET_SIZE
-    # Although of course it could be set larger!
-    cur.executemany(final_str, symbols)
-    
